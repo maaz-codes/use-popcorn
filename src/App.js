@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const tempMovieData = [
   {
@@ -52,8 +52,22 @@ const average = (arr) =>
 
 export default function App() {
   
-  const [movies, setMovies] = useState(tempMovieData);
+  const [movies, setMovies] = useState([]);
   const [watched, setWatched] = useState(tempWatchedData);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("")
+
+  const api_url = 'http://www.omdbapi.com/?apikey=646d154c';
+
+  async function fetchMovies() {
+
+      const response = await fetch(`${api_url}&s=interstellar`);
+      const data = await response.json();
+      setMovies(data.Search);
+      setIsLoading(false);   
+  }
+
+  useEffect( () => fetchMovies, []);
 
   return (
     <>
@@ -64,7 +78,7 @@ export default function App() {
 
       <Main>
         <Box>
-          <MovieList movies={movies} />
+          {isLoading ? <Loader /> : <MovieList movies={movies} />}
         </Box>
 
         <Box>
@@ -74,6 +88,18 @@ export default function App() {
       </Main>      
     </>
   ); 
+}
+
+function ErrorMessage({ message }) {
+  return (
+    <p className="error"><span>⛔</span>{message}</p>
+  );
+}
+
+function Loader() {
+  return(
+    <p className="loader">Loading...</p>
+  );
 }
 
 function Button({ setIsOpen, children }) {
