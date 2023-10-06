@@ -56,7 +56,7 @@ const average = (arr) =>
 export default function App() {
   
   const [movies, setMovies] = useState([]);
-  const [watched, setWatched] = useState(tempWatchedData);
+  const [watched, setWatched] = useState([]);
   const [query, setQuery] = useState("inception");
   const [selectedMovie, setSelectedMovie] = useState(1234);
 
@@ -73,6 +73,11 @@ export default function App() {
     setSelectedMovie(null);
   }
 
+  function handleAddWatched(newMovie) {
+    setWatched(prevMovies => (
+      [...prevMovies, newMovie]
+    ))
+  }
 
   useEffect( () => {
     async function fetchMovies() {
@@ -122,7 +127,7 @@ export default function App() {
 
         <Box>
           {
-            selectedMovie ? <MovieDetails selectedMovie={selectedMovie} onCloseMovieDetails={handleCloseMovieDetails} /> : <>
+            selectedMovie ? <MovieDetails selectedMovie={selectedMovie} onCloseMovieDetails={handleCloseMovieDetails} handleAddWatched={handleAddWatched} /> : <>
               <WatchedSummary watched={watched} />
               <WatchedMovieList watched={watched} />
             </> 
@@ -240,9 +245,10 @@ function Movie({ movie, onClick }) {
   );
 }
 
-function MovieDetails({ selectedMovie, onCloseMovieDetails }) {
+function MovieDetails({ selectedMovie, onCloseMovieDetails, handleAddWatched }) {
   const [movie, setMovie] = useState({});
   const [isLoading, setIsLoading] = useState(false);
+  const [userRating, setUserRating] = useState('');
 
   const {Title: title,
     Year: year,
@@ -254,6 +260,21 @@ function MovieDetails({ selectedMovie, onCloseMovieDetails }) {
     Actors: actors,
     Director: director,
     Genre: genre } = movie;
+
+    function onAddWatched() {
+      const newWatchedMovie = {
+        imdbID: selectedMovie,
+        title,
+        year,
+        poster,
+        runtime: Number(runtime.split(' ').at(0)),
+        imdbRating: Number(imdbRating),
+        userRating,
+      }
+      
+      handleAddWatched(newWatchedMovie);
+      onCloseMovieDetails();
+    }
 
   useEffect(() => {
     async function fetchMovieDetails() {
@@ -285,7 +306,13 @@ function MovieDetails({ selectedMovie, onCloseMovieDetails }) {
 
         <section>
           <div className="rating">
-            <StarRating maxRating={10} size={20}/>
+            {
+              
+            }
+            <StarRating maxRating={10} size={20} onSetRating={setUserRating}/>
+            {
+              userRating > 0 && <button className="btn-add" onClick={onAddWatched}>Add to list</button>
+            }
           </div>
            
           <p><em>{plot}</em></p>
@@ -341,8 +368,8 @@ function WatchedMovieList({ watched }) {
 function WatchedMovie({ movie }) {
   return (
     <li key={movie.imdbID}>
-      <img src={movie.Poster} alt={`${movie.Title} poster`} />
-      <h3>{movie.Title}</h3>
+      <img src={movie.poster} alt={`${movie.title} poster`} />
+      <h3>{movie.title}</h3>
       <div>
         <p>
           <span>⭐️</span>
