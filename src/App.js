@@ -58,7 +58,7 @@ export default function App() {
   const [movies, setMovies] = useState([]);
   const [watched, setWatched] = useState([]);
   const [query, setQuery] = useState("inception");
-  const [selectedMovie, setSelectedMovie] = useState(1234);
+  const [selectedMovie, setSelectedMovie] = useState();
 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("")
@@ -84,10 +84,12 @@ export default function App() {
   }
 
   useEffect( () => {
+    const controller = new AbortController();
+
     async function fetchMovies() {
       try {
         setError('');
-        const response = await fetch(`${api_url}&s=${query}`);
+        const response = await fetch(`${api_url}&s=${query}`, { signal: controller.signal });
         
         if (!response.ok) throw new Error("Something went wrong with fetching movies");
       
@@ -96,10 +98,14 @@ export default function App() {
         if (data.Response === 'False') throw new Error("Movies not found!");
   
         setMovies(data.Search);
+        setError('');
         
       } catch (err) {
         console.error(err.message);
-        setError(err.message);
+
+        if(err.name !== "AbortError") {
+          setError(err.message);
+        }
   
       } finally {
         setIsLoading(false);   
@@ -113,6 +119,11 @@ export default function App() {
     }
 
     fetchMovies();
+
+    return function () {
+      controller.abort();
+    }
+
   }, [query]);
 
   return (
@@ -185,8 +196,6 @@ function Logo() {
 }
 
 function Search({ query, setQuery }) {
-
-
   return (
     <input
               className="search"
@@ -287,6 +296,7 @@ function MovieDetails({ selectedMovie, onCloseMovieDetails, handleAddWatched, wa
     }
 
   useEffect(() => {
+
     async function fetchMovieDetails() {
       setIsLoading(true);
       const response = await fetch(`${api_url}&i=${selectedMovie}`);
@@ -296,6 +306,16 @@ function MovieDetails({ selectedMovie, onCloseMovieDetails, handleAddWatched, wa
     }
     fetchMovieDetails();
   }, [selectedMovie]);
+
+  useEffect(function () {
+    if (!title) return
+    document.title = `Movie | ${title}`;
+
+    return function () {
+      document.title = 'usePopcorn';
+    }
+  }, [title]);
+
 
   return (
     <>
