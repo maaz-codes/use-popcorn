@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import StarRating from "./StarRating";
 
 // const tempMovieData = [
@@ -32,9 +32,12 @@ const average = (arr) =>
 export default function App() {
   
   const [movies, setMovies] = useState([]);
-  const [watched, setWatched] = useState([]);
   const [query, setQuery] = useState("");
   const [selectedMovie, setSelectedMovie] = useState();
+  const [watched, setWatched] = useState(function () {
+    const savedMovies = JSON.parse(localStorage.getItem("watched"));
+    return savedMovies;
+  });
 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("")
@@ -50,14 +53,18 @@ export default function App() {
   }
 
   function handleAddWatched(newMovie) {
-    setWatched(prevMovies => (
-      [...prevMovies, newMovie]
-    ))
+    setWatched(prevMovies => [...prevMovies, newMovie]);
+
+    // localStorage.setItem("watched", JSON.stringify([...watched, newMovie]));
   }
   
   function handleDeleteWatched(id) {
     setWatched(movies => movies.filter(movie => movie.imdbID !== id));
   }
+
+  useEffect(function () {
+    localStorage.setItem("watched", JSON.stringify(watched));
+  }, [watched]);
 
   useEffect( () => {
     const controller = new AbortController();
@@ -174,6 +181,24 @@ function Logo() {
 }
 
 function Search({ query, setQuery }) {
+  const inputEl = useRef(null);
+  
+  useEffect(function() {
+    function callback(e) {
+      if (document.activeElement === inputEl.current) 
+      return;
+
+      if(e.code === "Enter") {
+        inputEl.current.focus();
+        setQuery(''); 
+      }
+    }
+
+    document.addEventListener("keydown", callback);
+
+    return () => { document.removeEventListener("keydown", callback) }
+  }, [setQuery]);
+
   return (
     <input
               className="search"
@@ -181,6 +206,7 @@ function Search({ query, setQuery }) {
               placeholder="Search movies..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
+              ref={inputEl}
             />
   );
 }
